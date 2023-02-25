@@ -1,9 +1,14 @@
 import { Add, Remove } from "@mui/icons-material"
+import { useEffect, useState } from "react"
+import { useSelector } from "react-redux"
 import styled from "styled-components"
 import Announcement from "../components/Announcement"
 import Footer from "../components/Footer"
 import Navbar from "../components/Navbar"
 import { mobile } from "../responsive"
+import StripeCheckout from 'react-stripe-checkout'
+import { userRequest } from "../requestMethods"
+import { useNavigate } from "react-router-dom"
 
 const Container = styled.div``
 const Wrapper = styled.div`
@@ -49,6 +54,7 @@ const Info = styled.div`
 const Product = styled.div`
     display: flex;
     justify-content: space-between;
+    margin-bottom: 10px;
 
     ${mobile({flexDirection: "column"})}
 `
@@ -108,7 +114,7 @@ const Summary = styled.div`
     border: .5px solid gray;
     border-radius: 10px;
     padding: 20px;
-    height: 50vh;
+    min-height: 43vh;
 `
 const SummaryTitle = styled.h1`
     font-weight: 200;
@@ -133,6 +139,31 @@ const Button = styled.button`
 `
 
 const Cart = () => {
+
+    const [stripeToken, setStripeToken] = useState(null)
+    const cart = useSelector(state=>state.cart)
+
+    const navigate = useNavigate()
+
+    const onToken = (token) => {
+        setStripeToken(token)
+    }
+     
+    useEffect(() => {
+        const makeRequest = async () => {
+            await userRequest.post('/checkout/payment', {
+                name: "Afsal P U",
+                amount: cart.total * 100
+            }).then((res) => {
+                console.log(res)
+                navigate("/")
+            }).catch((err) => {
+                console.log(err)
+            })
+        }
+        stripeToken && makeRequest()
+    }, [stripeToken, cart.total, navigate])
+
   return (
     <Container>
         <Navbar />
@@ -149,51 +180,34 @@ const Cart = () => {
             </Top>
             <Bottom>
                 <Info>
-                    <Product>
-                        <ProductDetail>
-                            <Image src="https://freepngimg.com/thumb/shoes/28530-3-nike-shoes-transparent.png" />
-                            <Details>
-                                <ProductName><b>Product:</b> JESSIE THUNDER SHOES</ProductName>
-                                <ProductId><b>ID:</b> 32498u32</ProductId>
-                                <ProductColor color="black" />
-                                <ProductSize><b>Size:</b> 37.5</ProductSize>
-                            </Details>
-                        </ProductDetail>
-                        <PriceDetail>
-                            <ProductAmountContainer>
-                                <Add />
-                                <ProductAmount>2</ProductAmount>
-                                <Remove />
-                            </ProductAmountContainer>
-                            <ProductPrice>$ 30</ProductPrice>
-                        </PriceDetail>
-                    </Product>
+                    {cart.products.map((product) => (
+                        <Product key={product.createdAt}>
+                            <ProductDetail>
+                                <Image src={product.img} />
+                                <Details>
+                                    <ProductName><b>Product:</b> {product.title}</ProductName>
+                                    <ProductId><b>ID:</b> {product._id}</ProductId>
+                                    <ProductColor color={product.color} />
+                                    <ProductSize><b>Size:</b> {product.size}</ProductSize>
+                                </Details>
+                            </ProductDetail>
+                            <PriceDetail>
+                                <ProductAmountContainer>
+                                    <Add />
+                                    <ProductAmount>{product.quantity}</ProductAmount>
+                                    <Remove />
+                                </ProductAmountContainer>
+                                <ProductPrice>$ {product.price * product.quantity}</ProductPrice>
+                            </PriceDetail>
+                        </Product>
+                    ))}
                     <Hr />
-                    <Product>
-                        <ProductDetail>
-                            <Image src="https://freepngimg.com/thumb/shoes/28530-3-nike-shoes-transparent.png" />
-                            <Details>
-                                <ProductName><b>Product:</b> JESSIE THUNDER SHOES</ProductName>
-                                <ProductId><b>ID:</b> 32498u32</ProductId>
-                                <ProductColor color="black" />
-                                <ProductSize><b>Size:</b> 37.5</ProductSize>
-                            </Details>
-                        </ProductDetail>
-                        <PriceDetail>
-                            <ProductAmountContainer>
-                                <Add />
-                                <ProductAmount>2</ProductAmount>
-                                <Remove />
-                            </ProductAmountContainer>
-                            <ProductPrice>$ 30</ProductPrice>
-                        </PriceDetail>
-                    </Product>
                 </Info>
                 <Summary>
                     <SummaryTitle>ORDER SUMMARY</SummaryTitle>
                     <SummaryItem>
                         <SummaryItemText>Subtotal</SummaryItemText>
-                        <SummaryItemPrice>$ 50</SummaryItemPrice>
+                        <SummaryItemPrice>$ {cart.total}</SummaryItemPrice>
                     </SummaryItem>
                     <SummaryItem>
                         <SummaryItemText>Estimated Shipping</SummaryItemText>
@@ -205,9 +219,20 @@ const Cart = () => {
                     </SummaryItem>
                     <SummaryItem type="total">
                         <SummaryItemText>Total</SummaryItemText>
-                        <SummaryItemPrice>$ 50</SummaryItemPrice>
+                        <SummaryItemPrice>$ {cart.total}</SummaryItemPrice>
                     </SummaryItem>
-                    <Button>CHECKOUT NOW</Button>
+                    <StripeCheckout 
+                        name="Afsal Shop"
+                        image=""
+                        billingAddress
+                        shippingAddress
+                        description={`Your total cart is $ ${cart.total}`}
+                        amount={cart.total*100}
+                        token={onToken}
+                        stripeKey={process.env.REACT_APP_STRIPE_KEY}
+                    >
+                        <Button>CHECKOUT NOW</Button>
+                    </StripeCheckout>
                 </Summary>
             </Bottom>
         </Wrapper>
