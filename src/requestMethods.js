@@ -1,7 +1,9 @@
 import axios from 'axios'
+import {store} from './redux/store'
 
 const BASE_URL = process.env.REACT_APP_URL
-const TOKEN = process.env.REACT_APP_TOKEN
+const TOKEN = store.getState().user.currentUser?.accessToken || process.env.REACT_APP_TOKEN
+
 
 export const publicRequest = axios.create({
     baseURL: BASE_URL
