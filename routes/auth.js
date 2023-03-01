@@ -10,6 +10,7 @@ router.post('/register', async (req, res) => {
         // username: req.body.username,
         // email: req.body.email,
         ...req.body,
+        
         // seperate password and encrypt it
         password: CryptoJS.AES.encrypt(req.body.password, process.env.PASS_SECRET).toString()
     })
@@ -25,6 +26,7 @@ router.post('/register', async (req, res) => {
 
 // login
 router.post('/login', async (req, res) => {
+    console.log(req.body)
     try {
         const user = await User.findOne({username: req.body.username})
         if(!user) { 
@@ -43,7 +45,7 @@ router.post('/login', async (req, res) => {
             isAdmin: user.isAdmin, 
         }, 
             process.env.JWT_SECRET_KEY,
-            {expiresIn: "1d"}
+            {expiresIn: "1d"} 
         )
 
         // separate password from being leaked
